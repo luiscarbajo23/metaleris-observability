@@ -1,0 +1,39 @@
+version: "3.7"
+
+services:
+  telegraf:
+    image: "telegraf:1.12.6-alpine"
+    volumes:
+      - type: bind
+        source: "./etc//telegraf/telegraf.conf"
+        target: "/etc/telegraf/telegraf.conf"
+
+  es:
+    image: "elastic/elasticsearch:7.4.2"
+    ports:
+      - 9200:9200
+    environment:
+      - node.name=es
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es
+      - cluster.initial_master_nodes=es
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  kibana:
+    image: "elastic/kibana:7.4.2"
+    depends_on:
+      - es
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://es:9200
+      ELASTICSEARCH_HOSTS: http://es:9200
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601"]
+      interval: 3s
+      timeout: 1s
+      retries: 3
+      start_period: 5s
